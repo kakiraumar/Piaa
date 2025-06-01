@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <iomanip>
 
 struct Square {
   public:
@@ -40,11 +41,13 @@ class Table {
         std::vector<Square> squares = {Square(0, 0, startY), Square(0, startY, startX),
                                        Square(startY, 0, startX)};
 
-        backtrack(squares, occupiedArea, 3, startX, startY);
+        std::cout << "Initial placement:" << std::endl;
+        printStep(squares, 0, 0); // Print initial squares
+        backtrack(squares, occupiedArea, 3, startX, startY, 1);
     }
 
     void printResult() {
-        std::cout << bestCount << std::endl;
+        std::cout << "\nFinal result (minimum squares = " << bestCount << "):" << std::endl;
         for (const auto &square : bestSolution) {
             std::cout << square.x * squareSize + 1 << " " << square.y * squareSize + 1 << " "
                       << square.size * squareSize << std::endl;
@@ -54,12 +57,23 @@ class Table {
     Table(int gridSize) : gridSize(gridSize), bestCount(gridSize * gridSize + 1) {}
 
   private:
+    void printStep(const std::vector<Square> &squares, int depth, int currentCount) {
+        std::cout << std::string(depth * 2, ' ') << "Step " << currentCount << " (Depth " << depth << "): ";
+        for (const auto &square : squares) {
+            std::cout << "(" << square.x * squareSize + 1 << "," << square.y * squareSize + 1 << ")["
+                      << square.size * squareSize << "] ";
+        }
+        std::cout << std::endl;
+    }
+
     void backtrack(std::vector<Square> currentSquares, int occupiedArea, int currentCount,
-                   int startX, int startY) {
+                   int startX, int startY, int depth) {
         if (occupiedArea == gridSize * gridSize) {
             if (currentCount < bestCount) {
                 bestCount = currentCount;
                 bestSolution = currentSquares;
+                std::cout << "\nNew best solution found (" << bestCount << " squares):" << std::endl;
+                printStep(bestSolution, depth, currentCount);
             }
             return;
         }
@@ -89,17 +103,24 @@ class Table {
                     }
 
                     currentSquares.push_back(newSquare);
+                    std::cout << std::string(depth * 2, ' ') << "Trying: (" 
+                              << newSquare.x * squareSize + 1 << "," << newSquare.y * squareSize + 1 << ")["
+                              << newSquare.size * squareSize << "]" << std::endl;
+                    printStep(currentSquares, depth, currentCount + 1);
+
                     if (newOccupiedArea == gridSize * gridSize) {
                         if (currentCount + 1 < bestCount) {
                             bestCount = currentCount + 1;
                             bestSolution = currentSquares;
+                            std::cout << "\nNew best solution found (" << bestCount << " squares):" << std::endl;
+                            printStep(bestSolution, depth, currentCount + 1);
                         }
                         currentSquares.pop_back();
                         continue;
                     }
 
                     if (currentCount + 1 < bestCount) {
-                        backtrack(currentSquares, newOccupiedArea, currentCount + 1, x, y);
+                        backtrack(currentSquares, newOccupiedArea, currentCount + 1, x, y, depth + 1);
                     }
                     currentSquares.pop_back();
                 }
@@ -145,6 +166,7 @@ class Table {
 
 int main() {
     int gridSize;
+    std::cout << "Enter grid size: ";
     std::cin >> gridSize;
 
     Table table(gridSize);
