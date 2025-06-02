@@ -29,16 +29,25 @@ def levenshtein_distance_with_steps(s, t):
                 insert = dp[i][j - 1] + 1
                 substitute = dp[i - 1][j - 1] + 1
                 
+                # Initialize double delete with infinity (impossible by default)
+                double_delete = float('inf')
+                
+                # Check if double delete is possible (i > 1 and characters match condition)
+                if i > 1 and (i == 2 or s[i-2] == s[i-1]):
+                    double_delete = dp[i - 2][j] + 1.5  # Cost for double delete
+                
                 # Find the minimum cost operation
-                if delete <= insert and delete <= substitute:
-                    dp[i][j] = delete
-                    ops[i][j] = ops[i - 1][j] + 'D'  # Deletion
-                elif insert <= delete and insert <= substitute:
-                    dp[i][j] = insert
+                min_cost = min(delete, insert, substitute, double_delete)
+                dp[i][j] = min_cost
+                
+                if min_cost == delete:
+                    ops[i][j] = ops[i - 1][j] + 'D'  # Single deletion
+                elif min_cost == insert:
                     ops[i][j] = ops[i][j - 1] + 'I'  # Insertion
-                else:
-                    dp[i][j] = substitute
+                elif min_cost == substitute:
                     ops[i][j] = ops[i - 1][j - 1] + 'S'  # Substitution
+                else:
+                    ops[i][j] = ops[i - 2][j] + 'DD'  # Double deletion
     
     # Backtrack to get the sequence of operations
     operations = []
@@ -49,8 +58,12 @@ def levenshtein_distance_with_steps(s, t):
             i -= 1
             j -= 1
         else:
-            if i > 0 and dp[i][j] == dp[i - 1][j] + 1:
-                operations.append('D')  # Deletion
+            # Check double delete first (since it's our new operation)
+            if i > 1 and dp[i][j] == dp[i - 2][j] + 1.5 and (i == 2 or s[i-2] == s[i-1]):
+                operations.append('DD')  # Double deletion
+                i -= 2
+            elif i > 0 and dp[i][j] == dp[i - 1][j] + 1:
+                operations.append('D')  # Single deletion
                 i -= 1
             elif j > 0 and dp[i][j] == dp[i][j - 1] + 1:
                 operations.append('I')  # Insertion
@@ -76,6 +89,9 @@ def levenshtein_distance_with_steps(s, t):
         elif op == 'D':
             steps.append(f"Delete '{s[ptr_s]}'")
             del current[ptr_s]
+        elif op == 'DD':
+            steps.append(f"Double delete '{s[ptr_s]}' and '{s[ptr_s+1]}'")
+            del current[ptr_s:ptr_s+2]
         elif op == 'I':
             steps.append(f"Insert '{t[ptr_t]}'")
             current.insert(ptr_s, t[ptr_t])
